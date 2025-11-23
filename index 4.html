@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotMyWallet.xyz – Flag Your Freedom</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@coral-xyz/anchor@0.30.1/dist/browser/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.2.0/dist/web3.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Orbitron', monospace;
+            background: #000;
+            color: #00ff41; 
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden; 
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.imgur.com/gK96vXo.png') no-repeat center center/cover; 
+            opacity: 0.6; 
+            filter: grayscale(80%) hue-rotate(150deg) brightness(0.9) contrast(1.2); 
+            z-index: -1;
+            animation: background-glitch 90s infinite linear alternate;
+        }
+        @keyframes background-glitch {
+            0% { transform: scale(1) translateX(0px) translateY(0px); }
+            50% { transform: scale(1.03) translateX(10px) translateY(5px); }
+            100% { transform: scale(1) translateX(0px) translateY(0px); }
+        }
+        .degen-sign {
+            position: fixed;
+            font-size: 2rem; 
+            color: rgba(255, 0, 255, 0.7); 
+            opacity: 0.2; 
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(255, 0, 255, 0.5); 
+            animation: float-glitch 12s infinite alternate ease-in-out;
+            white-space: nowrap; 
+            z-index: 1; 
+        }
+        .degen-sign:nth-child(1) { top: 8%; left: 8%; animation-delay: 0s; font-size: 2.2rem; }
+        .degen-sign:nth-child(2) { top: 22%; right: 12%; animation-delay: 2s; color: rgba(0, 255, 65, 0.6); }
+        .degen-sign:nth-child(3) { bottom: 15%; left: 18%; animation-delay: 4s; font-size: 1.8rem; }
+        .degen-sign:nth-child(4) { top: 45%; right: 7%; animation-delay: 6s; font-size: 2.5rem; color: rgba(0, 255, 65, 0.6); }
+        .degen-sign:nth-child(5) { bottom: 8%; left: 35%; animation-delay: 8s; font-size: 2.1rem; }
+        .degen-sign:nth-child(6) { top: 30%; left: 3%; animation-delay: 10s; font-size: 1.9rem; color: rgba(255, 0, 255, 0.7); }
+        .degen-sign:nth-child(7) { bottom: 30%; right: 5%; animation-delay: 12s; font-size: 2.3rem; }
+
+        @keyframes float-glitch {
+            0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0.2; filter: blur(0px); }
+            25% { transform: translate(5px, -5px) rotate(1deg); opacity: 0.3; filter: blur(0.2px); }
+            50% { transform: translate(0px, -10px) rotate(-1deg); opacity: 0.2; filter: blur(0px); }
+            75% { transform: translate(-5px, -5px) rotate(1deg); opacity: 0.3; filter: blur(0.2px); }
+            100% { transform: translate(0px, 0px) rotate(0deg); opacity: 0.2; filter: blur(0px); }
+        }
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            background: url('https://pbs.twimg.com/profile_images/1991343934484688896/vEnlNJUF.jpg') no-repeat center/contain; 
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff00ff; 
+            z-index: 10;
+        }
+        .pump-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff00ff;
+            border: 2px solid #ff00ff;
+            color: #000;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #ff00ff;
+            z-index: 10;
+        }
+        .pump-btn:hover {
+            background: #000;
+            color: #ff00ff;
+            box-shadow: 0 0 20px #ff00ff;
+        }
+        .data-block {
+            background: rgba(0, 0, 0, 0.95); 
+            border: 2px solid #00ff41;
+            padding: 40px;
+            max-width: 700px;
+            width: 90%;
+            box-shadow: 0 0 30px #00ff41, 0 0 40px rgba(0, 255, 65, 0.3); 
+            border-radius: 8px;
+            text-align: center;
+            animation: data-block-appear 0.8s ease-out;
+            position: relative;
+            z-index: 5;
+        }
+        @keyframes data-block-appear {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #00ff41, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 5px #ff00ff, 0 0 10px #00ff41;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ff00ff;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+        p.message {
+            font-size: 1.4rem;
+            max-width: 600px;
+            margin: 20px auto;
+            color: #fff;
+            line-height: 1.5;
+            text-shadow: 0 0 3px #00ff41; 
+        }
+        .countdown {
+            font-size: 1.8rem;
+            color: #ff00ff;
+            margin: 20px 0;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        button {
+            background: transparent;
+            color: #00ff41;
+            border: 2px solid #00ff41;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #00ff41;
+            flex-grow: 1;
+            max-width: 300px;
+        }
+        button:hover {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 0 0 20px #00ff41;
+            transform: translateY(-2px);
+        }
+        #flagBtn {
+            background: #ff0040;
+            border-color: #ff0040;
+            color: #fff;
+            box-shadow: 0 0 10px #ff0040;
+        }
+        #flagBtn:hover {
+            background: #000;
+            color: #ff0040;
+            box-shadow: 0 0 20px #ff0040;
+        }
+        .box {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ff00ff;
+            background: rgba(255, 0, 255, 0.05);
+            border-radius: 5px;
+            text-align: left;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            background: rgba(0, 0, 0, 0.7); 
+            color: #00ff41;
+            border: 1px solid #ff00ff;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        #status {
+            font-size: 1.1rem;
+            color: #ff00ff;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .twitter-link {
+            display: block;
+            margin-top: 30px;
+            color: #ff00ff;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+        .twitter-link:hover { color: #00ff41; }
+        footer {
+            position: absolute;
+            bottom: 10px;
+            font-size: 0.7rem;
+            color: #666;
+            width: 100%;
+            text-align: center;
+            z-index: 5; 
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .data-block { padding: 20px; }
+            .cta-buttons { flex-direction: column; }
+            button { max-width: none; }
+            .degen-sign { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="degen-sign">ANON</div>
+    <div class="degen-sign">ANTI-CENTRALIZATION</div>
+    <div class="degen-sign">BURN THE SYSTEM</div>
+    <div class="degen-sign">REVOLUTION</div>
+    <div class="degen-sign">DEGEN MODE</div>
+    <div class="degen-sign">TRUST NO ONE</div>
+    <div class="degen-sign">F*CK KYC</div>
+
+    <div class="logo"></div>
+    <button class="pump-btn" onclick="shareOnX()">SHARE ON X</button>
+
+    <div class="data-block">
+        <h1 class="neon-text">NOT MY WALLET</h1>
+        <p class="subtitle">DECENTRALIZED RESISTANCE PROTOCOL</p>
+        
+        <p class="message">
+            They can ban Tornado. Sanction Railgun. Freeze USDC.<br>
+            <b>They'll never stop you from burning your own address.</b>
+        </p>
+        
+        <p class="countdown">🚨 Multichain: Solana or Base – Flag your wallet now! ⏰</p>
+
+        <p id="status">🚮 Connect & flag forever</p>
+        
+        <div class="cta-buttons">
+            <button onclick="connect()">CONNECT WALLET</button>
+            <button onclick="flag()" id="flagBtn" style="display:none;">⚠️ FLAG COMPROMISED</button>
+        </div>
+
+        <div class="box" id="form">
+            <h2>Chain: <span id="chainName"></span></h2>
+            <h3>Address: <span id="addr"></span></h3>
+            <textarea id="reason" placeholder="Reason for flagging (optional, public record)"></textarea>
+            <small style="color:#ff00ff;">WARNING: This action is permanent. Ensure you have drained this address first!</small>
+        </div>
+
+        <a href="https://x.com/notmywallet_io" target="_blank" class="twitter-link">Follow @notmywallet_io for updates ☢️</a>
+
+    </div>
+
+    <footer>Built for degens by degens – Join the graveyard. #NotMyWallet</footer>
+
+    <script>
+        // --- LOGIQUE MULTICHAIN (inchangée) ---
+        function shareOnX() {
+            const text = "Just flagged my compromised wallet with @notmywallet_io – true degen privacy wins! ☢️ notmywallet.xyz #NotMyWallet";
+            window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        const SOLANA_PROGRAM_ID = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"; 
+        const SOLANA_NETWORK = "devnet"; 
+        const BASE_CONTRACT = "0x1234567890123456789012345678901234567890"; 
+        const BASE_NETWORK = 84532; 
+
+        let isSolana = false;
+        let web3, solanaConnection, anchorProvider, account;
+        let anchor = window.anchor; 
+
+        async function connect() {
+            document.getElementById("status").innerHTML = "Connecting...";
+
+            if (window.solana && window.solana.isPhantom) {
+                try {
+                    await window.solana.connect();
+                    solanaConnection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl(SOLANA_NETWORK));
+                    anchorProvider = new anchor.AnchorProvider(solanaConnection, window.solana, {});
+                    account = window.solana.publicKey.toString();
+                    isSolana = true;
+                    document.getElementById("chainName").innerText = "Solana";
+                    setupConnected(account);
+                    return;
+                } catch (e) { console.error("Solana connection error:", e); }
+            }
+
+            if (window.ethereum) {
+                try {
+                    web3 = new Web3(window.ethereum);
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    account = accounts[0];
+                    
+                    const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    const targetChainId = '0x' + BASE_NETWORK.toString(16);
+
+                    if (currentChainId !== targetChainId) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: targetChainId }],
+                            });
+                        } catch (switchError) {
+                            if (switchError.code === 4902) {
+                                alert("Base network not found in your wallet. Please add it manually or connect to a wallet with Base configured.");
+                            }
+                            console.error("Failed to switch chain:", switchError);
+                            document.getElementById("status").innerHTML = "Connection failed. Wrong network?";
+                            return; 
+                        }
+                    }
+
+                    isSolana = false;
+                    document.getElementById("chainName").innerText = "Base/EVM";
+                    setupConnected(account);
+                    return;
+                } catch (e) {
+                    console.error("EVM connection error:", e);
+                    document.getElementById("status").innerHTML = "Connection failed. Install Wallet!";
+                }
+            }
+            
+            alert("Please install a compatible wallet: Phantom (for Solana) or MetaMask/Rabby (for Base/EVM)!");
+            document.getElementById("status").innerHTML = "🚮 Connect & flag forever";
+        }
+
+        function setupConnected(addr) {
+            document.getElementById("addr").innerText = addr.slice(0,12)+"...";
+            document.getElementById("form").style.display = "block";
+            document.getElementById("flagBtn").style.display = "inline-block";
+            document.getElementById("status").innerHTML = `🔗 Connected on ${isSolana ? 'Solana' : 'Base/EVM'}: ${addr.slice(0,8)}...`;
+        }
+
+        async function flag() {
+            if (!account) {
+                alert("Please connect your wallet first!");
+                return;
+            }
+            document.getElementById("status").innerHTML = `⚠️ Flagging ${isSolana ? 'Solana' : 'Base/EVM'} address...`;
+            const reason = document.getElementById("reason").value || "compromised by the system";
+
+            if (isSolana) {
+                try {
+                    const idl = await anchor.Program.fetchIdl(SOLANA_PROGRAM_ID, anchorProvider);
+                    const program = new anchor.Program(idl, SOLANA_PROGRAM_ID, anchorProvider);
+                    
+                    const [pda] = solanaWeb3.PublicKey.findProgramAddressSync(
+                        [Buffer.from("compromised"), new solanaWeb3.PublicKey(account).toBuffer()],
+                        program.programId
+                    );
+
+                    await program.methods.flag(reason)
+                        .accounts({
+                            user: anchorProvider.wallet.publicKey,
+                            compromised: pda,
+                            systemProgram: solanaWeb3.SystemProgram.programId,
+                        })
+                        .rpc();
+
+                    document.getElementById("status").innerHTML = "✅ SUCCESS – Flagged on Solana forever! Join the resistance.";
+                } catch (e) {
+                    console.error("Solana Flag Tx Failed:", e);
+                    document.getElementById("status").innerHTML = "❌ Solana Tx Failed (Check console/SOL balance).";
+                }
+            } else {
+                const BASE_ABI = [{"inputs":[{"internalType":"string","name":"_reason","type":"string"}],"name":"flag","outputs":[],"stateMutability":"payable","type":"function"}];
+                const contract = new web3.eth.Contract(BASE_ABI, BASE_CONTRACT);
+                try {
+                    await contract.methods.flag(reason).send({
+                        from: account,
+                        value: web3.utils.toWei("0.002", "ether")
+                    });
+                    document.getElementById("status").innerHTML = "✅ SUCCESS – Flagged on Base forever! Join the resistance.";
+                } catch (e) {
+                    console.error("Base Flag Tx Failed:", e);
+                    document.getElementById("status").innerHTML = "❌ Base Tx Failed (Check console/ETH balance).";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
