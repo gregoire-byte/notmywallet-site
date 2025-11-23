@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotMyWallet.xyz – Flag Your Freedom</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@coral-xyz/anchor@0.30.1/dist/browser/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.2.0/dist/web3.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0033 50%, #000 100%);
+            color: #00ff41; 
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden; 
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://i.imgur.com/3vZfK5L.png') no-repeat center center/cover; /* Pepe cyberpunk jetant wallet */
+            opacity: 0.3; 
+            filter: grayscale(80%) hue-rotate(150deg) brightness(0.9) contrast(1.2); 
+            z-index: -1;
+            animation: background-glitch 90s infinite linear alternate;
+        }
+        @keyframes background-glitch {
+            0% { transform: scale(1) translateX(0px) translateY(0px); }
+            50% { transform: scale(1.03) translateX(10px) translateY(5px); }
+            100% { transform: scale(1) translateX(0px) translateY(0px); }
+        }
+        .title {
+            font-size: 4rem;
+            text-align: center;
+            margin: 20px;
+            background: linear-gradient(45deg, #00ff41, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: neon-glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes neon-glow {
+            from { text-shadow: 0 0 5px #00ff41; }
+            to { text-shadow: 0 0 20px #00ff41, 0 0 30px #ff00ff; }
+        }
+        .btn {
+            background: transparent;
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #00ff41;
+        }
+        .btn:hover {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 0 0 20px #00ff41;
+        }
+        .flag-btn {
+            border-color: #ff0040;
+            color: #ff0040;
+            box-shadow: 0 0 10px #ff0040;
+        }
+        .flag-btn:hover {
+            background: #ff0040;
+        }
+        .form {
+            display: none;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #00ff41;
+            background: rgba(0, 255, 65, 0.1);
+            max-width: 500px;
+        }
+        textarea {
+            width: 100%;
+            background: transparent;
+            color: #00ff41;
+            border: 1px solid #00ff41;
+            padding: 10px;
+            font-family: inherit;
+        }
+        #status {
+            margin: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .share-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff00ff;
+            color: #000;
+            border-color: #ff00ff;
+        }
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            opacity: 0.8;
+        }
+        a { color: #ff00ff; text-decoration: none; }
+        .logo {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            width: 60px;
+            height: 60px;
+            background: url('https://pbs.twimg.com/profile_images/1991343934484688896/vEnlNJUF.jpg') center/contain no-repeat;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #00ff41;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo"></div>
+    <button class="btn share-btn" onclick="shareOnX()">SHARE ON X</button>
+    <h1 class="title">NotMyWallet</h1>
+    <p>They can ban Tornado. Sanction Railgun. Freeze USDC.<br>
+       They'll never stop you from burning your own address.</p>
+    <p id="status">Connect the compromised wallet to flag it forever</p>
+    <button class="btn" onclick="connectWallet()">CONNECT WALLET</button>
+    <button class="btn flag-btn" id="flagBtn" style="display:none" onclick="flagWallet()">FLAG AS COMPROMISED</button>
+    <div class="form" id="walletForm">
+        <h3>Chain: <span id="chain"></span></h3>
+        <p>Address: <span id="address"></span></p>
+        <textarea id="reason" placeholder="Reason (optional, public)"></textarea>
+        <small>Irreversible. Drain everything first.</small>
+    </div>
+    <footer>
+        <a href="https://x.com/notmywallet_io" target="_blank">@notmywallet_io • Join the graveyard #NotMyWallet</a>
+    </footer>
+    <script>
+        const SOLANA_PROGRAM = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin";
+        const BASE_CONTRACT = "0x1234567890123456789012345678901234567890";
+        let isSolana = false;
+        let account;
+        async function connectWallet() {
+            if (window.solana && window.solana.isPhantom) {
+                await window.solana.connect();
+                account = window.solana.publicKey.toString();
+                isSolana = true;
+                document.getElementById("chain").innerText = "Solana";
+                document.getElementById("address").innerText = account.slice(0, 8) + "...";
+                document.getElementById("walletForm").style.display = "block";
+                document.getElementById("flagBtn").style.display = "inline-block";
+                document.getElementById("status").innerText = "Connected on Solana";
+            } else if (window.ethereum) {
+                const web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                account = (await web3.eth.getAccounts())[0];
+                isSolana = false;
+                document.getElementById("chain").innerText = "Base";
+                document.getElementById("address").innerText = account.slice(0, 8) + "...";
+                document.getElementById("walletForm").style.display = "block";
+                document.getElementById("flagBtn").style.display = "inline-block";
+                document.getElementById("status").innerText = "Connected on Base";
+            } else {
+                alert("Install Phantom or MetaMask!");
+            }
+        }
+        async function flagWallet() {
+            const reason = document.getElementById("reason").value || "compromised";
+            document.getElementById("status").innerText = "Flagging...";
+            if (isSolana) {
+                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("devnet"));
+                const provider = new anchor.AnchorProvider(connection, window.solana, {});
+                const idl = await anchor.Program.fetchIdl(SOLANA_PROGRAM, provider);
+                const program = new anchor.Program(idl, SOLANA_PROGRAM, provider);
+                const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
+                    [Buffer.from("compromised"), window.solana.publicKey.toBuffer()],
+                    program.programId
+                );
+                try {
+                    await program.methods.flag(reason)
+                        .accounts({
+                            user: window.solana.publicKey,
+                            compromised: pda,
+                            systemProgram: solanaWeb3.SystemProgram.programId,
+                        })
+                        .rpc();
+                    document.getElementById("status").innerText = "SUCCESS – Flagged on Solana forever!";
+                } catch (e) {
+                    console.error("Solana Flag Tx Failed:", e);
+                    document.getElementById("status").innerText = "Tx Failed – Check SOL balance.";
+                }
+            } else {
+                const BASE_ABI = [{"inputs":[{"internalType":"string","name":"_reason","type":"string"}],"name":"flag","outputs":[],"stateMutability":"payable","type":"function"}];
+                const contract = new web3.eth.Contract(BASE_ABI, BASE_CONTRACT);
+                try {
+                    await contract.methods.flag(reason).send({
+                        from: account,
+                        value: web3.utils.toWei("0.002", "ether")
+                    });
+                    document.getElementById("status").innerText = "SUCCESS – Flagged on Base forever!";
+                } catch (e) {
+                    console.error("Base Flag Tx Failed:", e);
+                    document.getElementById("status").innerText = "Tx Failed – Check ETH balance.";
+                }
+            }
+        }
+        function shareOnX() {
+            const text = "Just flagged my hacked wallet with @notmywallet_io – degen privacy wins! ☢️ notmywallet.xyz #NotMyWallet";
+            window.open("https://x.com/intent/tweet?text=" + encodeURIComponent(text));
+        }
+    </script>
+</body>
+</html>
