@@ -1,0 +1,212 @@
+import os
+from google.colab import files
+
+html_content_final = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotMyWallet.xyz – Flag Your Freedom</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@coral-xyz/anchor@0.30.1/dist/browser/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.2.0/dist/web3.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;900&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root{--g:#00ff41;--p:#ff00ff;--d:#0d001a}
+        *{margin:0;padding:0;box-sizing:border-box}
+        
+        /* BODY & Degen BACKGROUND (V3 Style) */
+        body{
+            background:#000;color:var(--g);font-family:'Orbitron',monospace;overflow:hidden;min-height:100vh;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;
+        }
+        body::before {
+            content:'';position:fixed;inset:0;
+            /* NEW DEGEN IMAGE (Wojak/Anonymous/Pepe visible) */
+            background:url('https://i.imgur.com/gK96vXo.png') center/cover no-repeat;
+            opacity:.6; filter:grayscale(80%) hue-rotate(150deg) brightness(.9) contrast(1.2);
+            z-index:-1;animation:background-glitch 90s infinite linear alternate;
+        }
+        @keyframes background-glitch{0%{transform:scale(1) translate(0)}50%{transform:scale(1.03) translate(10px,5px)}100%{transform:scale(1) translate(0)}}
+
+        /* Floating Degen Signs (V3 Style) */
+        .degen-sign{
+            position:fixed;font-size:2rem;color:rgba(255,0,255,.7);opacity:.2;pointer-events:none;
+            text-shadow:0 0 5px rgba(255,0,255,.5);animation:float-glitch 12s infinite alternate ease-in-out;
+            white-space:nowrap;z-index:1;font-family:'Rajdhani',sans-serif;
+        }
+        .degen-sign:nth-child(1){top:8%;left:8%;animation-delay:0s;font-size:2.2rem}
+        .degen-sign:nth-child(2){top:22%;right:12%;animation-delay:2s;color:rgba(0,255,65,.6)}
+        .degen-sign:nth-child(3){bottom:15%;left:18%;animation-delay:4s;font-size:1.8rem}
+        .degen-sign:nth-child(4){top:45%;right:7%;animation-delay:6s;font-size:2.5rem;color:rgba(0,255,65,.6)}
+        .degen-sign:nth-child(5){bottom:8%;left:35%;animation-delay:8s;font-size:2.1rem}
+        .degen-sign:nth-child(6){top:30%;left:3%;animation-delay:10s;font-size:1.9rem;color:rgba(255,0,255,.7)}
+        .degen-sign:nth-child(7){bottom:30%;right:5%;animation-delay:12s;font-size:2.3rem}
+        @keyframes float-glitch{0%{transform:translate(0)}50%{transform:translate(0,-10px) rotate(-1deg)}100%{transform:translate(0)}}
+
+        /* DATA BLOCK (Central Container) */
+        .data-block{
+            background:rgba(0,0,0,.95);border:2px solid var(--g);padding:40px;max-width:700px;
+            width:90%;box-shadow:0 0 30px var(--g),0 0 40px rgba(0,255,65,.3);border-radius:8px;
+            text-align:center;position:relative;z-index:5;animation:data-block-appear .8s ease-out;
+        }
+        @keyframes data-block-appear{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+        
+        .glitch-title{font-size:3.5rem;font-weight:900;text-transform:uppercase;letter-spacing:5px;
+            background:linear-gradient(45deg,var(--g),var(--p));-webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;text-shadow:0 0 10px var(--p),0 0 20px var(--g);
+            margin-bottom:5px;font-family:'Orbitron',monospace;
+        }
+        .tagline{font-size:1.4rem;max-width:600px;margin:20px auto;color:#fff;line-height:1.5;text-shadow:0 0 3px var(--g)}
+        
+        .btn{background:transparent;border:3px solid var(--g);color:var(--g);padding:18px 50px;font-size:1.4rem;
+            margin:10px;cursor:pointer;transition:all .4s;box-shadow:0 0 20px var(--g);text-transform:uppercase;font-weight:bold;
+        }
+        .btn:hover{background:var(--g);color:#000;box-shadow:0 0 40px var(--g);transform:scale(1.05)}
+        .flag-btn{background:#ff0040!important;border-color:#ff0040!important;box-shadow:0 0 30px #ff0040!important}
+        
+        .status{margin:20px 0;font-size:1.2rem;min-height:30px;color:var(--p)}
+        .form{background:rgba(0,255,65,.05);border:2px solid var(--g);padding:30px;border-radius:15px;max-width:600px;margin-top:20px;box-shadow:0 0 30px var(--g)}
+        textarea{width:100%;background:rgba(0,0,0,.7);border:1px solid var(--p);color:var(--g);padding:10px;font-family:inherit;margin:10px 0;box-sizing:border-box}
+        
+        .x-btn{position:absolute;top:20px;right:20px;background:var(--p);color:#000;z-index:100;padding:10px 20px;font-size:1rem}
+        .logo{position:absolute;top:20px;left:20px;width:60px;height:60px;background:url("https://pbs.twimg.com/profile_images/1991343934484688896/vEnlNJUF.jpg") center/contain no-repeat;border-radius:50%;box-shadow:0 0 15px var(--g);z-index:100}
+        footer{position:absolute;bottom:10px;padding:10px;text-align:center;opacity:.7;width:100%;z-index:5}
+        @media(max-width:768px){.glitch-title{font-size:2.5rem}.tagline{font-size:1.2rem}.btn{padding:12px 30px;font-size:1.2rem}}
+    </style>
+</head>
+<body>
+    
+    <div class="degen-sign">ANON</div>
+    <div class="degen-sign">ANTI-CENTRALIZATION</div>
+    <div class="degen-sign">BURN THE SYSTEM</div>
+    <div class="degen-sign">REVOLUTION</div>
+    <div class="degen-sign">DEGEN MODE</div>
+    <div class="degen-sign">TRUST NO ONE</div>
+    <div class="degen-sign">F*CK KYC</div>
+    
+    <div class="logo"></div>
+    <button class="btn x-btn" onclick="share()">SHARE ON X</button>
+
+    <div class="data-block">
+        <div class="glitch-title">NOT MY WALLET</div>
+        <div class="tagline" style="font-size:1.2rem;color:var(--p);margin-bottom:30px">DECENTRALIZED RESISTANCE PROTOCOL</div>
+        
+        <div class="tagline">
+            They can ban Tornado. Sanction Railgun. Freeze USDC.<br>
+            <strong>They'll never stop you from burning your own address.</strong><br>
+            <span style="color:var(--g)">Multichain: Solana • Base</span>
+        </div>
+        
+        <div class="status" id="status">🚨 Connect the compromised wallet -> flag it forever ⏰</div>
+        
+        <button class="btn" onclick="connect()">CONNECT WALLET</button>
+        <button class="btn flag-btn" id="flagBtn" style="display:none" onclick="flag()">⚠️ FLAG AS COMPROMISED</button>
+        
+        <div class="form" id="form" style="display:none">
+            <h2>Chain: <span id="chainName">???</span></h2>
+            <h3>Address: <span id="addr"></span></h3>
+            <textarea id="reason" placeholder="Reason (public - optional)"></textarea>
+            <small style="color:#ff0040">IRREVERSIBLE. Make sure you drained everything first.</small>
+        </div>
+    </div>
+
+    <footer>
+        <a href="https://x.com/notmywallet_io" target="_blank" style="color:var(--p);text-decoration:none">
+            Follow @notmywallet_io • Join the graveyard • #NotMyWallet
+        </a>
+    </footer>
+
+    <script>
+        const SOLANA_PROGRAM = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin";
+        const BASE_CONTRACT = "0x1234567890123456789012345678901234567890";
+        const BASE_CHAIN_ID = 84532;
+        let isSolana = false, account = null;
+
+        async function connect(){
+            document.getElementById("status").innerHTML = "Connecting...";
+            
+            // TRY SOLANA (Phantom)
+            if(window.solana?.isPhantom){
+                try {
+                    await window.solana.connect(); isSolana=true; account=window.solana.publicKey.toString();
+                    show("Solana"); return;
+                } catch(e) { console.error("Solana Connect Error:", e); }
+            }
+            
+            // TRY EVM (MetaMask/Rabby)
+            if(window.ethereum){
+                try {
+                    const web3=new Web3(window.ethereum);
+                    await window.ethereum.request({method:'eth_requestAccounts'});
+                    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x'+BASE_CHAIN_ID.toString(16)}]});
+                    account=(await web3.eth.getAccounts())[0]; isSolana=false;
+                    show("Base/EVM"); return;
+                } catch(e) { 
+                    console.error("EVM Connect Error:", e);
+                    document.getElementById("status").innerHTML="Connection failed. Please check wallet/network.";
+                }
+            }
+            alert("Install Phantom or MetaMask/Rabby!");
+            document.getElementById("status").innerHTML="🚨 Connect the compromised wallet -> flag it forever ⏰";
+        }
+        function show(chain){
+            document.getElementById("chainName").innerText=chain;
+            document.getElementById("addr").innerText=account.slice(0,10)+"..."+account.slice(-4);
+            document.getElementById("form").style.display="block";
+            document.getElementById("flagBtn").style.display="inline-block";
+            document.getElementById("status").innerHTML="🔗 Connected on "+chain;
+        }
+        async function flag(){
+            const reason=document.getElementById("reason").value||"compromised by the system";
+            document.getElementById("status").innerHTML="⚠️ Sending transaction, please confirm in wallet...";
+            
+            if(isSolana){
+                // SOLANA Logic (Requires Anchor program deployment)
+                try{
+                    const connection=new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("devnet"));
+                    const provider=new anchor.AnchorProvider(connection,window.solana,{});
+                    const idl=await anchor.Program.fetchIdl(SOLANA_PROGRAM,provider);
+                    const program=new anchor.Program(idl,SOLANA_PROGRAM,provider);
+                    const [pda]=anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("compromised"),window.solana.publicKey.toBuffer()],program.programId);
+                    
+                    await program.methods.flag(reason).accounts({user:window.solana.publicKey,compromised:pda,systemProgram:anchor.web3.SystemProgram.programId}).rpc();
+                    
+                    document.getElementById("status").innerHTML="✅ SUCCESS - Wallet burned on Solana forever!";
+                }catch(e){document.getElementById("status").innerHTML="❌ Solana Tx failed (check console/SOL balance).";}
+            }else{
+                // BASE/EVM Logic (Requires Solidity contract deployment)
+                try{
+                    const web3=new Web3(window.ethereum);
+                    const BASE_ABI=[{"inputs":[{"internalType":"string","name":"_reason","type":"string"}],"name":"flag","outputs":[],"stateMutability":"payable","type":"function"}];
+                    const contract=new web3.eth.Contract(BASE_ABI,BASE_CONTRACT);
+                    
+                    await contract.methods.flag(reason).send({from:account,value:web3.utils.toWei("0.002","ether")});
+                    
+                    document.getElementById("status").innerHTML="✅ SUCCESS - Wallet burned on Base forever!";
+                }catch(e){document.getElementById("status").innerHTML="❌ Base Tx failed (check console/ETH balance).";}
+            }
+        }
+        function share(){
+            const t="Just burned my hacked wallet forever with @notmywallet_io - degen privacy wins https://[VOTRE_URL_ICI] #NotMyWallet";
+            window.open("https://x.com/intent/tweet?text="+encodeURIComponent(t));
+        }
+    </script>
+</body>
+</html>"""
+
+# Écriture du fichier HTML dans la racine et téléchargement direct
+html_file_name = "index_final_degen.html"
+with open(html_file_name, "w", encoding="utf-8") as f:
+    f.write(html_content_final)
+
+try:
+    files.download(html_file_name)
+    print("Le téléchargement du fichier 'index_final_degen.html' a été initié.")
+    print("\n--- ÉTAPE CRUCIALE ---")
+    print("1. Téléchargez ce fichier sur votre ordinateur.")
+    print("2. Rendez-vous sur https://glitch.com/create (choisissez 'Import from file').")
+    print("3. Uploadez ce fichier HTML. Glitch le mettra en ligne immédiatement.")
+    print("4. Utilisez l'URL Glitch pour tester la connexion de votre wallet.")
+except Exception as e:
+    print(f"Le téléchargement automatique a échoué ({e}). Veuillez le télécharger manuellement depuis le panneau de gauche de Colab et l'uploader sur Glitch.")
